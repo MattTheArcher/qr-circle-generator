@@ -1,0 +1,36 @@
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Lokale Claude-Einstellungen
+.claude/settings.local.json
+
+# Systemdateien
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs, Build, Cache
+*.log
+dist/*
+!dist/qr-circle-generator.html
+out/
+.cache/
+tmp/
+
+# Technikspezifische Einträge darunter ergänzen (z. B. node_modules/, __pycache__/, .venv/)
+
+# Node
+node_modules/
+
+# Python (Prototyp)
+__pycache__/
+.venv/
+
+# Prototyp-Ausgaben (Beispielbild example-gap1.png bleibt)
+spike/*.png
+!spike/example-gap1.png
+
+# Private Dateien (z. B. eigene Beispielbilder), nur lokal
+local/

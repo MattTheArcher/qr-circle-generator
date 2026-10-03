@@ -1,0 +1,4 @@
+# Zeilenenden im Repo einheitlich (LF)
+* text=auto eol=lf
+*.png binary
+*.jpg binary

@@ -1,0 +1,6 @@
+﻿nummer;link;notiz
+1;https://open.spotify.com/track/6rqhFgbbKwnb9MLmUQDhG6;Link in Kurzform
+2;https://open.spotify.com/track/11dFghVXANMlKmJXsNCbNl?si=4f1b2c3d4e5f6a7b;Mit Tracking-Teil ?si= (wird automatisch entfernt)
+3;https://open.spotify.com/intl-de/track/6rqhFgbbKwnb9MLmUQDhG6?si=0a1b2c3d4e5f6a7b;Mit Sprachpräfix intl-de (wird automatisch entfernt)
+4;spotify:track:11dFghVXANMlKmJXsNCbNl;Spotify-URI (wird in einen Web-Link umgewandelt)
+5;open.spotify.com/track/6rqhFgbbKwnb9MLmUQDhG6;Ohne https:// (wird ergänzt)

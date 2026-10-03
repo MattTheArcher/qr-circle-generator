@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>QR-Kreis-Generator</title>
+<!--
+  QR-Kreis-Generator – erzeugt runde QR-Codes für Spotify-Songs (PNG und SVG).
+  Läuft komplett offline in dieser einen Datei. Quelltext: github.com/MattTheArcher/qr-circle-generator
+  Enthaltene Fremdbibliotheken: Nayuki QR Code generator library (MIT), jsQR (Apache-2.0),
+  Zeichenformen aus Liberation Sans (SIL Open Font License 1.1). Details unter „Lizenzen“ in der Anwendung.
+-->
+<style>
+/*STYLE*/
+</style>
+</head>
+<body>
+<header class="topbar">
+  <h1 class="brand"><span class="brand-mark" aria-hidden="true"></span>QR-Kreis-Generator</h1>
+  <div class="modes" role="tablist" aria-label="Modus">
+    <button role="tab" id="tab-single" aria-selected="true" aria-controls="panel-single" data-mode="single">Einzeln</button>
+    <button role="tab" id="tab-series" aria-selected="false" aria-controls="panel-series" data-mode="series">Serie aus CSV</button>
+  </div>
+</header>
+
+<main class="layout">
+  <section class="controls" aria-label="Einstellungen">
+
+    <div id="panel-single" role="tabpanel" aria-labelledby="tab-single" class="group panel">
+      <label class="field">
+        <span class="field-label" id="input-label">Spotify-Link</span>
+        <textarea id="single-input" rows="2" spellcheck="false" autocomplete="off"
+          placeholder="In Spotify: Teilen → Link kopieren, dann hier einfügen"></textarea>
+      </label>
+      <ul id="single-messages" class="messages" aria-live="polite"></ul>
+      <label class="field field-short">
+        <span class="field-label">Nummer unter dem Kreis <span class="optional">(optional)</span></span>
+        <input id="single-label" type="text" maxlength="24" placeholder="z. B. 228" autocomplete="off">
+      </label>
+    </div>
+
+    <div id="panel-series" role="tabpanel" aria-labelledby="tab-series" class="group panel" hidden>
+      <div id="dropzone" class="dropzone" tabindex="0" role="button" aria-describedby="csv-help">
+        <strong>CSV-Datei hierher ziehen</strong>
+        <span>oder klicken zum Auswählen</span>
+        <input id="csv-file" type="file" accept=".csv,text/csv,.txt" hidden>
+      </div>
+      <p id="csv-help" class="help">
+        Eine Zeile pro Code. Spalten: <code>nummer</code> (wird unter den Kreis gedruckt) und <code>link</code>.
+        Excel-Dateien vorher als „CSV (Trennzeichen-getrennt)“ speichern.
+        <button type="button" class="linklike" id="download-example">Beispiel-CSV herunterladen</button>
+      </p>
+      <div id="series-summary" class="series-summary" aria-live="polite"></div>
+      <div class="table-wrap" id="series-table-wrap" hidden>
+        <table class="series-table">
+          <thead><tr><th scope="col">Nr.</th><th scope="col">Link</th><th scope="col">Status</th></tr></thead>
+          <tbody id="series-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="group" role="group" aria-labelledby="look-title">
+      <h2 class="group-title" id="look-title">Aussehen</h2>
+
+      <div class="field">
+        <span class="field-label" id="fg-label">Farbe</span>
+        <div class="color-row">
+          <input id="fg-picker" type="color" value="#000000" aria-labelledby="fg-label">
+          <input id="fg-hex" type="text" value="#000000" maxlength="7" spellcheck="false" aria-labelledby="fg-label" class="hex">
+        </div>
+      </div>
+
+      <div class="field">
+        <span class="field-label" id="bg-label">Hintergrund</span>
+        <div class="color-row">
+          <input id="bg-picker" type="color" value="#ffffff" aria-labelledby="bg-label">
+          <input id="bg-hex" type="text" value="#FFFFFF" maxlength="7" spellcheck="false" aria-labelledby="bg-label" class="hex">
+          <label class="check"><input id="bg-transparent" type="checkbox"> durchsichtig</label>
+        </div>
+      </div>
+      <ul id="color-messages" class="messages" aria-live="polite"></ul>
+
+      <div class="field" role="radiogroup" aria-labelledby="eyes-label">
+        <span class="field-label" id="eyes-label">Ecken-Augen</span>
+        <label class="choice"><input type="radio" name="eyes" value="round" checked>
+          <span><b>Rund</b> <small>Standard</small></span></label>
+        <label class="choice"><input type="radio" name="eyes" value="square">
+          <span><b>Eckig</b> <small>sicherer: wird von mehr Scannern und auch schräg zuverlässig gelesen</small></span></label>
+      </div>
+
+      <div class="field" role="radiogroup" aria-labelledby="gap-label">
+        <span class="field-label" id="gap-label">Abstand zwischen Code und Muster</span>
+        <label class="choice"><input type="radio" name="gap" value="1" checked>
+          <span><b>1 Modul</b> <small>Standard</small></span></label>
+        <label class="choice"><input type="radio" name="gap" value="2">
+          <span><b>2 Module</b> <small>sicherer: Scanner grenzen den Code leichter ab, besser lesbar</small></span></label>
+      </div>
+
+      <div class="field">
+        <span class="field-label" id="size-label">Größe der Nummer</span>
+        <div class="segmented" role="radiogroup" aria-labelledby="size-label">
+          <label><input type="radio" name="labelSize" value="s"><span>klein</span></label>
+          <label><input type="radio" name="labelSize" value="m" checked><span>mittel</span></label>
+          <label><input type="radio" name="labelSize" value="l"><span>groß</span></label>
+        </div>
+      </div>
+
+      <div class="field">
+        <span class="field-label">Muster um den Code</span>
+        <button type="button" id="reroll" class="secondary">Neu würfeln</button>
+        <p class="help">Das Muster ist nur Dekoration. Ein Klick erzeugt eine andere Anordnung; derselbe Link sieht sonst immer gleich aus.</p>
+      </div>
+    </div>
+
+    <details class="group advanced">
+      <summary>Erweitert</summary>
+      <div class="field" role="radiogroup" aria-labelledby="ctype-label">
+        <span class="field-label" id="ctype-label">Inhalt</span>
+        <label class="choice"><input type="radio" name="contentType" value="spotify" checked>
+          <span><b>Spotify</b> <small>Standard; Links werden geprüft und gekürzt</small></span></label>
+        <label class="choice"><input type="radio" name="contentType" value="any">
+          <span><b>Beliebiger Link oder Text</b> <small>wird unverändert übernommen</small></span></label>
+      </div>
+      <div class="field" role="radiogroup" aria-labelledby="lformat-label">
+        <span class="field-label" id="lformat-label">Spotify-Linkformat</span>
+        <label class="choice"><input type="radio" name="linkFormat" value="web" checked>
+          <span><b>Web-Link</b> <small>Standard; open.spotify.com, funktioniert mit jeder Kamera-App</small></span></label>
+        <label class="choice"><input type="radio" name="linkFormat" value="app">
+          <span><b>App-Link</b> <small>spotify:track:… – öffnet direkt die App, aber nicht jede Kamera-App kennt das. Vorher testen.</small></span></label>
+      </div>
+      <label class="field field-short">
+        <span class="field-label">Fehlerkorrektur</span>
+        <select id="ecc">
+          <option value="H" selected>H – höchste (30 %), Standard</option>
+          <option value="Q">Q – 25 %</option>
+          <option value="M">M – 15 %</option>
+          <option value="L">L – 7 %</option>
+        </select>
+      </label>
+      <label class="field">
+        <span class="field-label">Dichte des Musters: <output id="density-out">45 %</output></span>
+        <input id="density" type="range" min="20" max="65" step="5" value="45">
+      </label>
+    </details>
+
+    <details class="group licenses">
+      <summary>Lizenzen</summary>
+      <p class="help">Diese Datei enthält: QR Code generator library von Project Nayuki (MIT-Lizenz),
+        jsQR von Cosmo Wolfe (Apache-2.0) für den Lesbarkeits-Test und Zeichenformen aus der Schrift
+        Liberation Sans (SIL Open Font License 1.1). „QR Code“ ist eine Marke von DENSO WAVE INCORPORATED.
+        Spotify ist eine Marke von Spotify AB; dieses Werkzeug steht in keiner Verbindung zu Spotify.</p>
+    </details>
+  </section>
+
+  <section class="stage" aria-label="Vorschau und Speichern">
+    <div class="sheet">
+      <div id="preview" class="preview" role="img" aria-label="Vorschau des QR-Codes"></div>
+      <p id="preview-caption" class="preview-caption"></p>
+    </div>
+
+    <div class="status-row">
+      <p id="selftest" class="selftest" aria-live="polite"></p>
+      <p id="meta" class="meta"></p>
+    </div>
+
+    <div class="export">
+      <label class="field field-inline">
+        <span class="field-label">PNG-Größe</span>
+        <select id="png-size">
+          <option value="1000">Klein – ca. 1000 Pixel breit</option>
+          <option value="2000" selected>Mittel – ca. 2000 Pixel breit</option>
+          <option value="4000">Groß – ca. 4000 Pixel breit</option>
+          <option value="custom">Eigene Breite …</option>
+        </select>
+        <input id="png-custom" type="number" min="200" max="6000" step="100" value="3000" hidden aria-label="Eigene Breite in Pixel">
+      </label>
+      <p id="png-info" class="help"></p>
+
+      <div id="export-single" class="buttons">
+        <button type="button" id="save-png" class="primary">PNG speichern</button>
+        <button type="button" id="save-svg" class="primary ghost">SVG speichern</button>
+      </div>
+
+      <div id="export-series" class="buttons" hidden>
+        <div class="segmented" role="radiogroup" aria-label="Dateiformat für die Serie">
+          <label><input type="radio" name="seriesFormat" value="png" checked><span>PNG</span></label>
+          <label><input type="radio" name="seriesFormat" value="svg"><span>SVG</span></label>
+          <label><input type="radio" name="seriesFormat" value="both"><span>beides</span></label>
+        </div>
+        <button type="button" id="save-zip" class="primary" disabled>Alle als ZIP speichern</button>
+      </div>
+      <div id="progress" class="progress" hidden><div id="progress-bar"></div></div>
+      <p id="export-message" class="help" aria-live="polite"></p>
+    </div>
+  </section>
+</main>
+
+<script>
+/*SCRIPTS*/
+</script>
+</body>
+</html>
